@@ -1,0 +1,41 @@
+.Задание:
+ Посмотрите на код класса GridThreadSerialNumber
+ Зачем нужен synchronized в методе initialValue?
+ Предложите более простой код для этой цели
+
+link:https://github.com/apache/ignite/blob/da8a6bb4756c998aa99494d395752be96d841ec8/modules/core/src/test/java/org/apache/ignite/session/GridThreadSerialNumber.java[GridThreadSerialNumber]
+
+---
+
+Зачем нужен synchronized в методе initialValue?::
+Перегруженный метод `initialValue()` вызывается только при первом вызове `get()` потоком. +
++
+Обычно для методов `ThreadLocal` синхронизация не нужна, так как каждый поток работает со своей копией переменных. Однако, если мы перегружаем `initialValue()` (или какой-то другой метод), то для безопасной работы в многопоточной среде лучше перестраховаться и добавить какую-то синхронизацию. _(по крайней мере в коде `ThreadLocal` я не нашёл каких-то синхронизаций на момент инициализации.)_ +
++
+Если у нас создаётся большое количество потоков с использованием одного и того же экземпляра GridThreadSerialNumber, то есть вероятность, что неатомарный инкремент `nextSerialNum++` может отдать что-то не то. +
+
+Предложите более простой код для этой цели::
+Можно взглянуть на документацию к link:https://docs.oracle.com/javase/8/docs/api/java/lang/ThreadLocal.html[`ThreadLocal`] из JDK 8 +
++
+То есть `synchronized` можно выкинуть и просто использовать `AtomicInteger` как в примере выше:
++
+* `nextSerialNum` делаем `AtomicInteger`
+* убираем `synchronized`
+* инкрементируем атомарно через `getAndIncrement()`
++
+В итоге, получаем код:
+```
+private AtomicInteger nextSerialNum = new AtomicInteger(0);
+
+private ThreadLocal<Integer> serialNum = new ThreadLocal<Integer>() {
+    @Override
+    protected Integer initialValue() {
+        return nextSerialNum.getAndIncrement();
+    }
+};
+
+// или тоже самое через `withInitial()`:
+private AtomicInteger nextSerialNum = new AtomicInteger(0);
+private ThreadLocal<Integer> serialNum = ThreadLocal.withInitial(() -> nextSerialNum.getAndIncrement());
+
+```

@@ -3,6 +3,8 @@
  Узнайте его PID
  Получите thread dump для Intellij IDEA
 
+---
+
 *Thread dump*: link:dump.txt[]
 
 .Изучив информацию в нём, ответьте на вопросы ниже:
