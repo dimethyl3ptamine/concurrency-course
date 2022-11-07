@@ -10,14 +10,14 @@ link:https://github.com/apache/ignite/blob/da8a6bb4756c998aa99494d395752be96d841
 Зачем нужен synchronized в методе initialValue?::
 Перегруженный метод `initialValue()` вызывается только при первом вызове `get()` потоком. +
 +
-Обычно для методов `ThreadLocal` синхронизация не нужна, так как каждый поток работает со своей копией переменных. Однако, если мы перегружаем `initialValue()` (или какой-то другой метод), то для безопасной работы в многопоточной среде лучше перестраховаться и добавить какую-то синхронизацию. _(по крайней мере в коде `ThreadLocal` я не нашёл каких-то синхронизаций на момент инициализации.)_ +
+Обычно для методов `ThreadLocal` синхронизация не нужна, так как каждый поток работает со своей копией переменных. Однако, если мы перегружаем `initialValue()` (или какой-то другой метод), то для безопасной работы в многопоточной среде лучше перестраховаться и добавить какую-то синхронизацию. _(По крайней мере в коде `ThreadLocal` я не нашёл каких-то синхронизаций на момент инициализации.)_ +
 +
-Если у нас создаётся большое количество потоков с использованием одного и того же экземпляра GridThreadSerialNumber, то есть вероятность, что неатомарный инкремент `nextSerialNum++` может отдать что-то не то. +
+Если у нас создаётся большое количество потоков с использованием одного и того же экземпляра `GridThreadSerialNumber`, то есть вероятность, что неатомарный инкремент `nextSerialNum++` может отдать что-то не то. +
 
 Предложите более простой код для этой цели::
-Можно взглянуть на документацию к link:https://docs.oracle.com/javase/8/docs/api/java/lang/ThreadLocal.html[`ThreadLocal`] из JDK 8 +
+Можно взглянуть на документацию к link:https://docs.oracle.com/javase/8/docs/api/java/lang/ThreadLocal.html[`ThreadLocal`] из JDK 8. Там есть подобный пример для генерации уникальных идентификаторов, построенный на инкременте. +
 +
-То есть `synchronized` можно выкинуть и просто использовать `AtomicInteger` как в примере выше:
+В нашем случае с `GridThreadSerialNumber` ключевое слово `synchronized` можно выкинуть и просто использовать `AtomicInteger` как в примере из JDK выше:
 +
 * `nextSerialNum` делаем `AtomicInteger`
 * убираем `synchronized`
@@ -34,8 +34,8 @@ private ThreadLocal<Integer> serialNum = new ThreadLocal<Integer>() {
     }
 };
 
-// или тоже самое через `withInitial()`:
+// Или тоже самое через вызов withInitial():
 private AtomicInteger nextSerialNum = new AtomicInteger(0);
-private ThreadLocal<Integer> serialNum = ThreadLocal.withInitial(() -> nextSerialNum.getAndIncrement());
-
+private ThreadLocal<Integer> serialNum =
+    ThreadLocal.withInitial(() -> nextSerialNum.getAndIncrement());
 ```
