@@ -1,0 +1,26 @@
+Сравните две маленькие программы
+
+Эта завершится, но ничего не напечатает в консоли:
+
+ public static void main(String[] args) {
+        ForkJoinPool forkJoinPool = new ForkJoinPool(4);
+        forkJoinPool.submit(() -> System.out.println(
+        IntStream.range(0,10000000).average().getAsDouble()
+    ));
+}
+
+Эта напечатает 49999.5, но не закончит выполнение:
+
+ public static void main(String[] args) {
+    ExecutorService executor = Executors.newCachedThreadPool();
+    executor.submit(() -> System.out.println(
+        IntStream.range(0,10000000).average().getAsDouble()
+    ));
+}
+
+.Задание:
+
+ Попробуйте ответить на вопросы ниже без дебага, на основе знаний о деталях реализации:
+ - Почему получились разные результаты?
+ - Как исправить ситуацию в первом случае, чтобы и результат вывелся, и программа завершилась?
+ - А во втором?
